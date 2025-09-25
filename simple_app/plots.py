@@ -149,6 +149,7 @@ def spectra_plot(query: str, db_file: str, night_sky_theme: Theme,
         return flux  # unable to normalise by first 0.01um
 
     # query the database for the spectra
+    # Using spectra= in table() reads with the astrodbkit loaders
     db = SimpleDB(db_file)  # open database
     t_spectra: Table = db.query(db.Spectra).\
         filter(db.Spectra.c.source == query).\
@@ -173,7 +174,14 @@ def spectra_plot(query: str, db_file: str, night_sky_theme: Theme,
 
     # checking each spectra in table
     for spec in t_spectra:
-        spectrum = Spectrum.read(spec['access_url'])
+        # When reading the table, astrodbkit should have already created Spectrum objects
+        spectrum = spec["access_url"]
+        if isinstance(spectrum, str):
+            print("Re-attempting spectra conversion")
+            try:
+                spectrum = Spectrum.read(spec["access_url"])
+            except Exception as e:
+                print(f"Unable to read {spectrum}. Error: {e}")
 
         # checking spectrum has good units and not only NaNs or 0s
         try:
